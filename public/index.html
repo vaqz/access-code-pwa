@@ -67,15 +67,14 @@
   <main v-else class="space-y-3">
     <article v-for="code in filteredCodes" :key="code._rowIndex" class="card flex min-w-0 items-center gap-3 rounded-2xl border border-slate-800/90 px-3 py-3 shadow-lg">
       <div class="min-w-0 flex-1">
-        <div class="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Profile Name</div>
-        <h2 class="truncate text-base font-extrabold text-white">{{code.profile}}</h2>
-        <div class="mt-2 flex flex-wrap items-center gap-2">
-          <span v-if="isLatest(code)" class="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-300"><i class="fa-solid fa-star"></i> Latest entry</span>
-          <span class="text-xs font-medium text-slate-400">{{relativeTime(code.timestamp)}}</span>
+        <div class="mb-2 flex flex-wrap items-center gap-2">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Profile Name</span>
+          <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-[10px] font-bold tracking-wide text-emerald-300"><i class="fa-regular fa-clock"></i> {{relativeTime(code.timestamp)}}</span>
         </div>
+        <h2 class="truncate text-base font-extrabold text-white">{{code.profile}}</h2>
       </div>
-      <button @click="copyLink(code)" :aria-label="'Copy link for '+code.profile" title="Copy link" class="btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500 text-white"><i class="fa-regular fa-copy"></i></button>
       <button @click="openLink(code)" :aria-label="'Open link for '+code.profile" title="Open link" class="btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-100"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+      <button @click="copyLink(code)" :aria-label="'Copy link for '+code.profile" title="Copy link" class="btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500 text-white"><i class="fa-regular fa-copy"></i></button>
     </article>
   </main>
   <footer class="mt-8 border-t border-slate-800 pt-4 text-center text-xs text-slate-600"><p>Access Code · Read-only</p><p class="mt-1">Last synced: {{lastSynced||'Not yet synced'}}</p><button @click="loadCodes" class="mt-3 py-2 text-slate-400"><i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh now</button></footer>
