@@ -46,10 +46,10 @@
     </button>
     <div v-if="showInstructions" class="mt-2 rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-sm text-slate-300">
       <ol class="list-decimal space-y-2 pl-5">
-        <li>Find the correct <strong>Profile Name</strong> or search for it.</li>
-        <li>Use the <strong>LATEST ENTRY</strong> label to identify the newest verification email.</li>
-        <li>Tap the copy icon to copy the link, or the open icon to continue to Netflix.</li>
-        <li>Before opening, confirm the profile is correct and that you own or are authorized to access it.</li>
+        <li>Find your correct <strong>Profile Name</strong> or search for it.</li>
+        <li>Don't see your profile? Resend the verification email. <strong>No email, no link here.</strong></li>
+        <li>Tap <strong>Open</strong> first. If the link doesn't work in Messenger or another app, tap <strong>Copy</strong> and paste it into your browser.</li>
+        <li>Before continuing, make sure the selected profile is yours or one you're authorized to access.</li>
       </ol>
     </div>
   </div>
@@ -83,16 +83,12 @@
     <section role="dialog" aria-modal="true" aria-labelledby="confirm-title" class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
       <div class="mb-3 flex items-center gap-3">
         <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-300"><i class="fa-solid fa-shield-halved text-lg"></i></div>
-        <div><h2 id="confirm-title" class="text-lg font-bold text-white">Confirm profile</h2><p class="text-xs text-slate-400">Before opening the Netflix link</p></div>
+        <div><h2 id="confirm-title" class="text-lg font-bold text-white">Confirm profile</h2><p class="text-xs text-slate-400">Before opening the link</p></div>
       </div>
-      <p class="mb-4 text-sm leading-relaxed text-slate-300">Selected profile: <strong class="text-white">{{pendingCode.profile}}</strong>. Please make sure this is the correct profile and that you own or are authorized to access it.</p>
-      <label class="mb-5 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/60 p-3 text-sm text-slate-200">
-        <input v-model="authorized" type="checkbox" class="mt-1 h-4 w-4 accent-indigo-500">
-        <span>I confirm this is the correct profile and I am authorized to access it.</span>
-      </label>
+      <p class="mb-5 text-sm leading-relaxed text-slate-300">Selected profile: <strong class="text-white">{{pendingCode.profile}}</strong>. Please make sure <strong class="text-white">{{pendingCode.profile}}</strong> is your correct profile and that you own or are authorized to access it.</p>
       <div class="grid grid-cols-2 gap-3">
         <button @click="cancelOpen" class="rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-200">Cancel</button>
-        <button @click="confirmOpen" :disabled="!authorized" class="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Continue</button>
+        <button @click="confirmOpen" class="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold text-white">Continue</button>
       </div>
     </section>
   </div>
@@ -106,7 +102,7 @@ createApp({setup(){
   // Replace this with the deployed Apps Script /exec URL.
   const API_URL='https://script.google.com/macros/s/AKfycbxfdUT4gbAp4Wcy7KL6ejTd6u5Znmj8gDtX_LVhDr0sXjk_f2S9yKqTFStJXt_J5bhv/exec';
   const codes=ref([]),search=ref(''),loading=ref(false),error=ref(''),toast=ref(''),lastSynced=ref('');
-  const showInstructions=ref(false),pendingCode=ref(null),authorized=ref(false);
+  const showInstructions=ref(false),pendingCode=ref(null);
   let refreshTimer=null,toastTimer=null,requestId=0;
   const filteredCodes=computed(()=>{const term=search.value.trim().toLowerCase();return term?codes.value.filter(c=>c.profile.toLowerCase().includes(term)):codes.value;});
   function isSafeLink(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='www.netflix.com'&&u.pathname==='/account/travel/verify';}catch{return false;}}
@@ -142,17 +138,19 @@ createApp({setup(){
   }
   function previewLink(link){try{const u=new URL(link);return u.origin+u.pathname+'?nftoken=••••••••';}catch{return'Verification link';}}
   function showToast(message){toast.value=message;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.value='',2200);}
-  async function copyLink(code){try{await navigator.clipboard.writeText(code.link);showToast('Link copied to clipboard');}
-    catch{try{const area=document.createElement('textarea');area.value=code.link;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();const success=document.execCommand('copy');area.remove();showToast(success?'Link copied to clipboard':'Copy failed. Open the link instead.');}catch{showToast('Copy failed. Open the link instead.');}}}
+  async function copyLink(code){
+    const successMessage='Link copied. Double-check the selected profile before using it.';
+    try{await navigator.clipboard.writeText(code.link);showToast(successMessage);}
+    catch{try{const area=document.createElement('textarea');area.value=code.link;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();const success=document.execCommand('copy');area.remove();showToast(success?successMessage:'Copy failed. Try opening the link instead.');}catch{showToast('Copy failed. Try opening the link instead.');}}
+  }
   function isLatest(code){return codes.value.length>0&&code._rowIndex===codes.value[0]._rowIndex;}
   function openLink(code){
     if(!isSafeLink(code.link)){showToast('Invalid verification link');return;}
     pendingCode.value=code;
-    authorized.value=false;
   }
-  function cancelOpen(){pendingCode.value=null;authorized.value=false;}
+  function cancelOpen(){pendingCode.value=null;}
   function confirmOpen(){
-    if(!pendingCode.value||!authorized.value)return;
+    if(!pendingCode.value)return;
     const code=pendingCode.value;
     if(!isSafeLink(code.link)){cancelOpen();showToast('Invalid verification link');return;}
     // Open synchronously from the confirmation click to avoid popup blockers.
@@ -175,7 +173,7 @@ createApp({setup(){
     document.removeEventListener('visibilitychange',refreshWhenVisible);
     requestId++;
   });
-  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,previewLink,copyLink,openLink,isLatest,showInstructions,pendingCode,authorized,cancelOpen,confirmOpen};
+  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,previewLink,copyLink,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen};
 }}).mount('#app');
 if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(console.error));
 </script>
