@@ -107,7 +107,7 @@ createApp({setup(){
   onMounted(()=>{
     loadCodes();
     // Refresh every 5 seconds while the page is visible; avoid background polling.
-    refreshTimer=setInterval(refreshWhenVisible,5000);
+    refreshTimer=setInterval(refreshWhenVisible,10000);
     document.addEventListener('visibilitychange',refreshWhenVisible);
   });
   onUnmounted(()=>{
