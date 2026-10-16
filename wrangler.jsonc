@@ -1,0 +1,14 @@
+{
+  "name": "accesscode-pwa",
+  "compatibility_date": "2026-10-16",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    {
+      "pattern": "accesscode.vaqzmobiz.com",
+      "custom_domain": true
+    }
+  ]
+}
