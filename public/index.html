@@ -97,6 +97,7 @@ createApp({setup(){
     const hours=Math.floor(minutes/60);
     return hours+'h ago';
   }
+  function previewLink(link){try{const u=new URL(link);return u.origin+u.pathname+'?nftoken=••••••••';}catch{return'Verification link';}}
   function showToast(message){toast.value=message;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.value='',2200);}
   async function copyLink(code){try{await navigator.clipboard.writeText(code.link);showToast('Link copied to clipboard');}
     catch{try{const area=document.createElement('textarea');area.value=code.link;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();const success=document.execCommand('copy');area.remove();showToast(success?'Link copied to clipboard':'Copy failed. Open the link instead.');}catch{showToast('Copy failed. Open the link instead.');}}}
