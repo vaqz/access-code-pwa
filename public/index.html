@@ -91,10 +91,12 @@
       </div>
     </section>
   </div>
-  <transition enter-active-class="transition duration-200" enter-from-class="scale-95 opacity-0" leave-active-class="transition duration-200" leave-to-class="scale-95 opacity-0">
-    <div v-if="toast" role="status" aria-live="polite" class="fixed left-1/2 top-1/2 z-50 flex w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 items-start gap-3 rounded-2xl border border-slate-600 bg-slate-800 px-6 py-5 text-base font-semibold leading-relaxed text-white shadow-2xl">
-      <i class="fa-solid fa-circle-check mt-1 shrink-0 text-lg text-emerald-400"></i>
-      <span>{{toast}}</span>
+  <transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-active-class="transition duration-200" leave-to-class="opacity-0">
+    <div v-if="toast" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5">
+      <div role="status" aria-live="polite" class="flex w-full max-w-md items-start gap-3 rounded-2xl border border-slate-600 bg-slate-800 px-5 py-5 text-base font-semibold leading-relaxed text-white shadow-2xl sm:px-6">
+        <i class="fa-solid fa-circle-check mt-1 shrink-0 text-lg text-emerald-400"></i>
+        <span class="min-w-0 break-words">{{toast}}</span>
+      </div>
     </div>
   </transition>
 </div>
