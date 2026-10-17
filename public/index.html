@@ -104,7 +104,7 @@
 const {createApp,ref,computed,onMounted,onUnmounted}=Vue;
 createApp({setup(){
   // Replace this with the deployed Apps Script /exec URL.
-  const API_URL='https://mail.vaqzmobiz.com/api/access-codes';
+  const API_URL='https://api.vaqzmobiz.com/api/access-codes';
   const codes=ref([]),search=ref(''),loading=ref(false),error=ref(''),toast=ref(''),lastSynced=ref('');
   const showInstructions=ref(false),pendingCode=ref(null);
   let refreshTimer=null,toastTimer=null,idleTimer=null,requestId=0;
