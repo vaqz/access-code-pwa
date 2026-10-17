@@ -54,7 +54,7 @@
     </div>
   </div>
   <div class="mb-5 flex items-center justify-between text-xs text-slate-400">
-    <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full" :class="error?'bg-red-400':'bg-emerald-400'"></span><span>{{error?'Connection issue':'Auto-sync every 10 seconds'}}</span></div>
+    <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full" :class="error?'bg-red-400':'bg-emerald-400'"></span><span>{{error?'Connection issue':'Auto-sync every 3 seconds'}}</span></div>
     <span>{{filteredCodes.length}} code{{filteredCodes.length===1?'':'s'}}</span>
   </div>
   <div v-if="error" class="mb-4 rounded-xl border border-red-900 bg-red-950/40 p-4 text-sm text-red-300"><i class="fa-solid fa-triangle-exclamation mr-2"></i>{{error}} <button @click="loadCodes" class="ml-2 underline">Retry</button></div>
@@ -104,7 +104,7 @@
 const {createApp,ref,computed,onMounted,onUnmounted}=Vue;
 createApp({setup(){
   // Replace this with the deployed Apps Script /exec URL.
-  const API_URL='https://script.google.com/macros/s/AKfycbxfdUT4gbAp4Wcy7KL6ejTd6u5Znmj8gDtX_LVhDr0sXjk_f2S9yKqTFStJXt_J5bhv/exec';
+  const API_URL='https://mail.vaqzmobiz.com/api/access-codes';
   const codes=ref([]),search=ref(''),loading=ref(false),error=ref(''),toast=ref(''),lastSynced=ref('');
   const showInstructions=ref(false),pendingCode=ref(null);
   let refreshTimer=null,toastTimer=null,idleTimer=null,requestId=0;
@@ -127,25 +127,23 @@ createApp({setup(){
   }
   const filteredCodes=computed(()=>{const term=search.value.trim().toLowerCase();return term?codes.value.filter(c=>c.profile.toLowerCase().includes(term)):codes.value;});
   function isSafeLink(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='www.netflix.com'&&u.pathname==='/account/travel/verify';}catch{return false;}}
-  function loadCodes(){
+  async function loadCodes(){
     if(loading.value)return;
-    if(!API_URL.startsWith('https://script.google.com/')){error.value='Please configure your Apps Script Web App URL.';return;}
     const id=++requestId;loading.value=true;error.value='';
-    const callbackName='__accessCodeJsonp'+id,script=document.createElement('script');let finished=false;
-    const timeout=setTimeout(()=>{cleanup();if(id===requestId)error.value='Request timed out. Check your connection and retry.';},15000);
-    function cleanup(){if(finished)return;finished=true;delete window[callbackName];script.remove();clearTimeout(timeout);if(id===requestId)loading.value=false;}
-    window[callbackName]=data=>{cleanup();if(id!==requestId)return;if(!Array.isArray(data)){error.value=data?.error||'Unexpected response from the server.';return;}
-      codes.value=data.filter(c=>{
-        if(!c||typeof c.profile!=='string'||typeof c.link!=='string'||!isSafeLink(c.link))return false;
-        // Hide the old demo/sample entry only (profile Vaqz, dated June 23, 2025).
-        const sampleDate=typeof c.timestamp==='string'&&c.timestamp.startsWith('2025-06-23');
-        if(c.profile.trim().toLowerCase()==='vaqz'&&sampleDate)return false;
-        return true;
-      });
-      lastSynced.value=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});};
-    script.onerror=()=>{cleanup();if(id===requestId)error.value='Unable to connect. Check deployment access and URL.';};
-    script.src=API_URL+(API_URL.includes('?')?'&':'?')+'callback='+encodeURIComponent(callbackName)+'&_='+Date.now();
-    document.body.appendChild(script);
+    try{
+      const response=await fetch(API_URL,{method:'GET',cache:'no-store',credentials:'omit',headers:{'Accept':'application/json'}});
+      if(!response.ok)throw new Error(response.status===401||response.status===403?'Access denied by mailbox API.':'Mailbox API returned an error.');
+      const data=await response.json();
+      if(!Array.isArray(data.codes))throw new Error(data.error||'Unexpected response from the mailbox API.');
+      if(id!==requestId)return;
+      codes.value=data.codes.filter(c=>c&&typeof c.id==='string'&&typeof c.profile==='string'&&typeof c.link==='string'&&isSafeLink(c.link))
+        .map(c=>({...c,_rowIndex:c.id}));
+      lastSynced.value=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    }catch(e){
+      if(id===requestId)error.value=e instanceof Error?e.message:'Unable to connect to the mailbox API.';
+    }finally{
+      if(id===requestId)loading.value=false;
+    }
   }
   function relativeTime(value){
     if(!value)return'Date unavailable';
@@ -184,8 +182,8 @@ createApp({setup(){
   }
   onMounted(()=>{
     loadCodes();
-    // Refresh every 10 seconds while the page is visible; avoid background polling.
-    refreshTimer=setInterval(refreshWhenVisible,10000);
+    // Refresh every 3 seconds while visible for fast updates; avoid background polling.
+    refreshTimer=setInterval(refreshWhenVisible,3000);
     redirectAfterInactivity();
     ['pointerdown','keydown','touchstart','scroll','input'].forEach(eventName=>{
       window.addEventListener(eventName,handleUserActivity,{passive:true});
