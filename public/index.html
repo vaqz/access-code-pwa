@@ -67,8 +67,8 @@
   <main v-else class="space-y-3">
     <article v-for="code in filteredCodes" :key="code._rowIndex" class="card flex min-w-0 items-center gap-3 rounded-2xl border border-slate-800/90 px-3 py-3 shadow-lg">
       <div class="min-w-0 flex-1">
-        <div class="mb-2 flex flex-wrap items-center gap-2">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Profile Name</span>
+        <div class="mb-1 flex flex-wrap items-center gap-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Profile Name</span>
           <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-[10px] font-bold tracking-wide text-emerald-300"><i class="fa-regular fa-clock"></i> {{relativeTime(code.timestamp)}}</span>
         </div>
         <h2 class="truncate text-base font-extrabold text-white">{{code.profile}}</h2>
