@@ -91,11 +91,11 @@
       </div>
     </section>
   </div>
-  <transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-active-class="transition duration-200" leave-to-class="opacity-0">
-    <div v-if="toast" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5" @click="toast=''">
-      <div role="status" aria-live="polite" class="flex w-full max-w-md items-start gap-3 rounded-2xl border border-slate-600 bg-slate-800 px-5 py-5 text-base font-semibold leading-relaxed text-white shadow-2xl sm:px-6">
-        <i class="fa-solid fa-circle-check mt-1 shrink-0 text-lg text-emerald-400"></i>
-        <span class="min-w-0 flex-1 break-words">{{toast}}</span><button @click="toast=''" aria-label="Close message" class="ml-2 rounded-lg p-2 text-slate-300"><i class="fa-solid fa-xmark"></i></button>
+  <transition enter-active-class="transition duration-200" enter-from-class="opacity-0 translate-y-2" leave-active-class="transition duration-200" leave-to-class="opacity-0 translate-y-2">
+    <div v-if="toast" class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 px-4" @click="clearToast()">
+      <div role="status" aria-live="polite" class="mx-auto flex w-fit max-w-[calc(100vw-2rem)] items-start gap-3 rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold leading-snug text-white shadow-2xl" @click.stop>
+        <i class="fa-solid fa-circle-check mt-0.5 shrink-0 text-base text-emerald-400"></i>
+        <span class="min-w-0 break-words">{{toast}}</span><button @click="clearToast()" aria-label="Close message" class="ml-1 shrink-0 rounded-lg p-1 text-slate-300"><i class="fa-solid fa-xmark"></i></button>
       </div>
     </div>
   </transition>
@@ -157,7 +157,9 @@ createApp({setup(){
     return hours+'h ago';
   }
   function isLatest(code){return codes.value.length>0&&code._rowIndex===codes.value[0]._rowIndex;}
-  async function copyCode(value){try{await navigator.clipboard.writeText(String(value));toast.value='Code copied!';}catch{toast.value='Copy is unavailable in this browser. Please select the code and copy it manually.';}}
+  function clearToast(){toast.value='';clearTimeout(toastTimer);}
+  function showToast(message,duration=2500){clearTimeout(toastTimer);toast.value=message;toastTimer=setTimeout(()=>{toast.value='';},duration);}
+  async function copyCode(value){try{await navigator.clipboard.writeText(String(value));showToast('Code copied!',1800);}catch{showToast('Copy unavailable. Please copy the code manually.',3500);}}
   function openLink(code){pendingCode.value=code;}
   function cancelOpen(){pendingCode.value=null;}
   const retrieving=ref(false);
@@ -197,7 +199,7 @@ createApp({setup(){
     }catch(e){console.warn('Could not refresh access codes after retrieval:',e);}
     consumedIds.add(failedCode._rowIndex);
     codes.value=codes.value.filter(item=>item._rowIndex!==failedCode._rowIndex);
-    toast.value='No code found! Resend the email, wait for your new profile to appear, then tap Get code again.';
+    showToast('No code found! Resend the email, wait for your new profile to appear, then tap Get code again.',5000);
   }
   function refreshWhenVisible(){
     if(document.visibilityState==='visible')loadCodes();
@@ -222,7 +224,7 @@ createApp({setup(){
     document.removeEventListener('visibilitychange',handleVisibilityChange);
     requestId++;
   });
-  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,copyCode,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen,retrieving};
+  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,copyCode,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen,retrieving,clearToast};
 }}).mount('#app');
 if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(console.error));
 </script>
