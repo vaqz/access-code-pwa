@@ -73,7 +73,7 @@
         </div>
         <h2 class="-mt-1 truncate text-base font-extrabold leading-tight text-white">{{code.profile}}</h2><div v-if="code.accessCode" class="mt-2 font-mono text-xl font-black tracking-[.25em] text-emerald-300">{{code.accessCode}}</div>
       </div>
-      <div v-if="code.accessCode" class="flex shrink-0 items-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-mono text-lg font-black tracking-widest text-emerald-300">{{code.accessCode}}</div><button v-else @click="openLink(code)" :aria-label="'Get code for '+code.profile" title="Get code" class="btn flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-indigo-400/40 bg-indigo-500/15 px-3 text-xs font-bold text-indigo-200"><i class="fa-solid fa-key"></i><span>Get code</span></button>
+      <button v-if="code.accessCode" @click.stop="copyCode(code.accessCode)" :aria-label="'Copy code '+code.accessCode" title="Copy code" class="btn flex shrink-0 items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-mono text-lg font-black tracking-widest text-emerald-300"><span>{{code.accessCode}}</span><i class="fa-regular fa-copy text-sm"></i></button><button v-else @click="openLink(code)" :aria-label="'Get code for '+code.profile" title="Get code" class="btn flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-indigo-400/40 bg-indigo-500/15 px-3 text-xs font-bold text-indigo-200"><i class="fa-solid fa-key"></i><span>Get code</span></button>
 
     </article>
   </main>
@@ -126,7 +126,7 @@ createApp({setup(){
       clearTimeout(idleTimer);
     }
   }
-  const filteredCodes=computed(()=>{const term=search.value.trim().toLowerCase();return term?codes.value.filter(c=>c.profile.toLowerCase().includes(term)):codes.value;});
+  const filteredCodes=computed(()=>{const seen=new Set();const unique=codes.value.filter(c=>{const key=c.accessCode?c.profile.trim().toLowerCase()+'|'+c.accessCode:null;if(!key)return true;if(seen.has(key))return false;seen.add(key);return true;});const term=search.value.trim().toLowerCase();return term?unique.filter(c=>c.profile.toLowerCase().includes(term)):unique;});
   function isSafeLink(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='www.netflix.com'&&u.pathname==='/account/travel/verify';}catch{return false;}}
   async function loadCodes(){
     if(loading.value)return;
@@ -157,6 +157,7 @@ createApp({setup(){
     return hours+'h ago';
   }
   function isLatest(code){return codes.value.length>0&&code._rowIndex===codes.value[0]._rowIndex;}
+  async function copyCode(value){try{await navigator.clipboard.writeText(String(value));toast.value='Code copied!';}catch{toast.value='Copy is unavailable in this browser. Please select the code and copy it manually.';}}
   function openLink(code){pendingCode.value=code;}
   function cancelOpen(){pendingCode.value=null;}
   const retrieving=ref(false);
@@ -197,7 +198,7 @@ createApp({setup(){
     document.removeEventListener('visibilitychange',handleVisibilityChange);
     requestId++;
   });
-  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen,retrieving};
+  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,copyCode,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen,retrieving};
 }}).mount('#app');
 if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(console.error));
 </script>
