@@ -92,10 +92,10 @@
     </section>
   </div>
   <transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-active-class="transition duration-200" leave-to-class="opacity-0">
-    <div v-if="toast" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5">
+    <div v-if="toast" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5" @click="toast=''">
       <div role="status" aria-live="polite" class="flex w-full max-w-md items-start gap-3 rounded-2xl border border-slate-600 bg-slate-800 px-5 py-5 text-base font-semibold leading-relaxed text-white shadow-2xl sm:px-6">
         <i class="fa-solid fa-circle-check mt-1 shrink-0 text-lg text-emerald-400"></i>
-        <span class="min-w-0 break-words">{{toast}}</span>
+        <span class="min-w-0 flex-1 break-words">{{toast}}</span><button @click="toast=''" aria-label="Close message" class="ml-2 rounded-lg p-2 text-slate-300"><i class="fa-solid fa-xmark"></i></button>
       </div>
     </div>
   </transition>
