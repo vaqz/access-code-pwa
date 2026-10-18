@@ -71,7 +71,7 @@
           <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Profile Name</span>
           <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-300"><i class="fa-regular fa-clock"></i> {{relativeTime(code.timestamp)}}</span>
         </div>
-        <h2 class="-mt-1 truncate text-base font-extrabold leading-tight text-white">{{code.profile}}</h2><div v-if="code.accessCode" class="mt-2 font-mono text-xl font-black tracking-[.25em] text-emerald-300">{{code.accessCode}}</div>
+        <h2 class="-mt-1 truncate text-base font-extrabold leading-tight text-white">{{code.profile}}</h2>
       </div>
       <button v-if="code.accessCode" @click.stop="copyCode(code.accessCode)" :aria-label="'Copy code '+code.accessCode" title="Copy code" class="btn flex shrink-0 items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-mono text-lg font-black tracking-widest text-emerald-300"><span>{{code.accessCode}}</span><i class="fa-regular fa-copy text-sm"></i></button><button v-else @click="openLink(code)" :aria-label="'Get code for '+code.profile" title="Get code" class="btn flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-indigo-400/40 bg-indigo-500/15 px-3 text-xs font-bold text-indigo-200"><i class="fa-solid fa-key"></i><span>Get code</span></button>
 
@@ -171,9 +171,33 @@ createApp({setup(){
       if(data.status==='success'&&/^\\d{4}$/.test(String(data.accessCode||''))){
         codes.value=codes.value.map(item=>item._rowIndex===code._rowIndex?{...item,status:'success',accessCode:data.accessCode}:item);
         pendingCode.value=null;
-      }else{consumedIds.add(code._rowIndex);codes.value=codes.value.filter(item=>item._rowIndex!==code._rowIndex);toast.value='No code found! Resend the email, wait for your new profile to appear, then tap Get code again.';pendingCode.value=null;}
-    }catch(e){consumedIds.add(code._rowIndex);codes.value=codes.value.filter(item=>item._rowIndex!==code._rowIndex);toast.value='No code found! Resend the email, wait for your new profile to appear, then tap Get code again.';pendingCode.value=null;}
+      }else{
+        await reconcileAfterFailedRetrieval(code);
+        pendingCode.value=null;
+      }
+    }catch(e){
+      await reconcileAfterFailedRetrieval(code);
+      pendingCode.value=null;
+    }
     finally{retrieving.value=false;}
+  }
+  async function reconcileAfterFailedRetrieval(failedCode){
+    try{
+      const response=await fetch(API_URL,{method:'GET',cache:'no-store',credentials:'omit',headers:{'Accept':'application/json'}});
+      const data=await response.json();
+      if(response.ok&&Array.isArray(data.codes)){
+        const fresh=data.codes.filter(c=>c&&typeof c.id==='string'&&!consumedIds.has(c.id)&&typeof c.profile==='string')
+          .map(c=>({...c,_rowIndex:c.id}));
+        codes.value=fresh;
+        lastSynced.value=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        const failedTime=Date.parse(failedCode.timestamp||'')||0;
+        const newerCode=fresh.some(item=>item.profile.trim().toLowerCase()===failedCode.profile.trim().toLowerCase()&&/^\\d{4}$/.test(String(item.accessCode||''))&&(Date.parse(item.timestamp||'')||0)>=failedTime);
+        if(newerCode)return;
+      }
+    }catch(e){console.warn('Could not refresh access codes after retrieval:',e);}
+    consumedIds.add(failedCode._rowIndex);
+    codes.value=codes.value.filter(item=>item._rowIndex!==failedCode._rowIndex);
+    toast.value='No code found! Resend the email, wait for your new profile to appear, then tap Get code again.';
   }
   function refreshWhenVisible(){
     if(document.visibilityState==='visible')loadCodes();
