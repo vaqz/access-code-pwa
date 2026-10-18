@@ -73,7 +73,7 @@
         </div>
         <h2 class="-mt-1 truncate text-base font-extrabold leading-tight text-white">{{code.profile}}</h2><div v-if="code.accessCode" class="mt-2 font-mono text-xl font-black tracking-[.25em] text-emerald-300">{{code.accessCode}}</div>
       </div>
-      <button @click="openLink(code)"  :aria-label="'Get code for '+code.profile" title="Get code" class="btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-100"><i class="fa-solid fa-key"></i></button>
+      <div v-if="code.accessCode" class="flex shrink-0 items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-bold text-emerald-300"><i class="fa-solid fa-circle-check"></i><span>Retrieved</span></div><button v-else @click="openLink(code)" :aria-label="'Get code for '+code.profile" title="Get code" class="btn flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-400/40 bg-indigo-500/15 px-4 text-sm font-bold text-indigo-200"><i class="fa-solid fa-key"></i><span>Get code</span></button>
 
     </article>
   </main>
@@ -170,8 +170,8 @@ createApp({setup(){
       if(data.status==='success'&&/^\\d{4}$/.test(String(data.accessCode||''))){
         codes.value=codes.value.map(item=>item._rowIndex===code._rowIndex?{...item,status:'success',accessCode:data.accessCode}:item);
         pendingCode.value=null;
-      }else{toast.value=data.message||'Code unavailable. Resend the verification email and try again.';pendingCode.value=null;}
-    }catch(e){toast.value=e instanceof Error?e.message:'Unable to retrieve code.';pendingCode.value=null;}
+      }else{toast.value='We couldn’t retrieve this code. Please request a new Netflix verification email, then wait for the new entry to appear here before tapping Get code again.';pendingCode.value=null;}
+    }catch(e){toast.value='We couldn’t retrieve this code. Please request a new Netflix verification email, then wait for the new entry to appear here before tapping Get code again.';pendingCode.value=null;}
     finally{retrieving.value=false;}
   }
   function refreshWhenVisible(){
