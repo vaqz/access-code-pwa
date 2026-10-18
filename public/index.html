@@ -48,7 +48,7 @@
       <ol class="list-decimal space-y-2 pl-5">
         <li>Find your correct <strong>Profile Name</strong> or search for it.</li>
         <li>Don't see your profile? Resend the verification email. <strong>No email, no link here.</strong></li>
-        <li>Tap <strong>Open</strong> and confirm your authorization. Each link is removed after you open it, so do not open it unless you are ready to use it.</li>
+        <li>Tap <strong>Get code</strong> and confirm the selected profile. The four-digit code will appear here when retrieval succeeds.</li>
         <li>Before continuing, make sure the selected profile is yours or one you're authorized to access.</li>
       </ol>
     </div>
@@ -73,7 +73,7 @@
         </div>
         <h2 class="-mt-1 truncate text-base font-extrabold leading-tight text-white">{{code.profile}}</h2><div v-if="code.accessCode" class="mt-2 font-mono text-xl font-black tracking-[.25em] text-emerald-300">{{code.accessCode}}</div>
       </div>
-      <button @click="openLink(code)" :aria-label="'Open link for '+code.profile" title="Open link" class="btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-100"><i class="fa-solid fa-key"></i></button>
+      <button @click="openLink(code)"  :aria-label="'Get code for '+code.profile" title="Get code" class="btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-100"><i class="fa-solid fa-key"></i></button>
 
     </article>
   </main>
@@ -82,12 +82,12 @@
     <section role="dialog" aria-modal="true" aria-labelledby="confirm-title" class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
       <div class="mb-3 flex items-center gap-3">
         <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-300"><i class="fa-solid fa-shield-halved text-lg"></i></div>
-        <div><h2 id="confirm-title" class="text-lg font-bold text-white">Confirm profile</h2><p class="text-xs text-slate-400">Before opening the link</p></div>
+        <div><h2 id="confirm-title" class="text-lg font-bold text-white">Confirm profile</h2><p class="text-xs text-slate-400">Before retrieving the code</p></div>
       </div>
       <p class="mb-5 text-sm leading-relaxed text-slate-300">Selected profile: <strong class="text-white">{{pendingCode.profile}}</strong>. Please make sure <strong class="text-white">{{pendingCode.profile}}</strong> is your correct profile and that you own or are authorized to access it.</p>
       <div class="grid grid-cols-2 gap-3">
         <button @click="cancelOpen" class="rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-200">Cancel</button>
-        <button @click="confirmOpen" class="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold text-white">{{retrieving ? "Retrieving..." : "Get code"}}</button>
+        <button @click="confirmOpen" :disabled="retrieving" class="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold text-white disabled:opacity-50">{{retrieving ? "Retrieving..." : "Get code"}}</button>
       </div>
     </section>
   </div>
@@ -137,7 +137,7 @@ createApp({setup(){
       const data=await response.json();
       if(!Array.isArray(data.codes))throw new Error(data.error||'Unexpected response from the mailbox API.');
       if(id!==requestId)return;
-      codes.value=data.codes.filter(c=>c&&typeof c.id==='string'&&!consumedIds.has(c.id)&&typeof c.profile==='string'&&typeof c.profile==='string')
+      codes.value=data.codes.filter(c=>c&&typeof c.id==='string'&&!consumedIds.has(c.id)&&typeof c.profile==='string')
         .map(c=>({...c,_rowIndex:c.id}));
       lastSynced.value=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     }catch(e){
