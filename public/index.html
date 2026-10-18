@@ -168,7 +168,7 @@ createApp({setup(){
       const response=await fetch(API_URL+'/'+encodeURIComponent(code._rowIndex)+'/retrieve',{method:'POST',cache:'no-store',credentials:'omit',headers:{'Accept':'application/json'}});
       const data=await response.json();
       if(!response.ok)throw new Error(data.message||data.error||'Unable to retrieve code.');
-      if(data.status==='success'&&/^\\d{4}$/.test(String(data.accessCode||''))){
+      if(data.status==='success'&&/^\d{4}$/.test(String(data.accessCode||''))){
         codes.value=codes.value.map(item=>item._rowIndex===code._rowIndex?{...item,status:'success',accessCode:data.accessCode}:item);
         pendingCode.value=null;
       }else{
@@ -191,7 +191,7 @@ createApp({setup(){
         codes.value=fresh;
         lastSynced.value=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
         const failedTime=Date.parse(failedCode.timestamp||'')||0;
-        const newerCode=fresh.some(item=>item.profile.trim().toLowerCase()===failedCode.profile.trim().toLowerCase()&&/^\\d{4}$/.test(String(item.accessCode||''))&&(Date.parse(item.timestamp||'')||0)>=failedTime);
+        const newerCode=fresh.some(item=>item.profile.trim().toLowerCase()===failedCode.profile.trim().toLowerCase()&&/^\d{4}$/.test(String(item.accessCode||''))&&(Date.parse(item.timestamp||'')||0)>=failedTime);
         if(newerCode)return;
       }
     }catch(e){console.warn('Could not refresh access codes after retrieval:',e);}
