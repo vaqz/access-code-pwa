@@ -48,7 +48,7 @@
       <ol class="list-decimal space-y-2 pl-5">
         <li>Find your correct <strong>Profile Name</strong> or search for it.</li>
         <li>Don't see your profile? Resend the verification email. <strong>No email, no link here.</strong></li>
-        <li>Tap <strong>Open</strong> first. If the link doesn't work in Messenger or another app, tap <strong>Copy</strong> and paste it into your browser.</li>
+        <li>Tap <strong>Open</strong> and confirm your authorization. Each link is removed after you open it, so do not open it unless you are ready to use it.</li>
         <li>Before continuing, make sure the selected profile is yours or one you're authorized to access.</li>
       </ol>
     </div>
@@ -74,7 +74,7 @@
         <h2 class="-mt-1 truncate text-base font-extrabold leading-tight text-white">{{code.profile}}</h2>
       </div>
       <button @click="openLink(code)" :aria-label="'Open link for '+code.profile" title="Open link" class="btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-100"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
-      <button @click="copyLink(code)" :aria-label="'Copy link for '+code.profile" title="Copy link" class="btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500 text-white"><i class="fa-regular fa-copy"></i></button>
+
     </article>
   </main>
   <footer class="mt-8 border-t border-slate-800 pt-4 text-center text-xs text-slate-600"><p>Access Code · Read-only</p><p class="mt-1">Last synced: {{lastSynced||'Not yet synced'}}</p><button @click="loadCodes" class="mt-3 py-2 text-slate-400"><i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh now</button></footer>
@@ -106,6 +106,7 @@ createApp({setup(){
   // Replace this with the deployed Apps Script /exec URL.
   const API_URL='https://api.vaqzmobiz.com/api/access-codes';
   const codes=ref([]),search=ref(''),loading=ref(false),error=ref(''),toast=ref(''),lastSynced=ref('');
+  const consumedIds=new Set();
   const showInstructions=ref(false),pendingCode=ref(null);
   let refreshTimer=null,toastTimer=null,idleTimer=null,requestId=0;
   const IDLE_TIMEOUT_MS=5*60*1000;
@@ -136,7 +137,7 @@ createApp({setup(){
       const data=await response.json();
       if(!Array.isArray(data.codes))throw new Error(data.error||'Unexpected response from the mailbox API.');
       if(id!==requestId)return;
-      codes.value=data.codes.filter(c=>c&&typeof c.id==='string'&&typeof c.profile==='string'&&typeof c.link==='string'&&isSafeLink(c.link))
+      codes.value=data.codes.filter(c=>c&&typeof c.id==='string'&&!consumedIds.has(c.id)&&typeof c.profile==='string'&&typeof c.link==='string'&&isSafeLink(c.link))
         .map(c=>({...c,_rowIndex:c.id}));
       lastSynced.value=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     }catch(e){
@@ -155,13 +156,6 @@ createApp({setup(){
     const hours=Math.floor(minutes/60);
     return hours+'h ago';
   }
-  function previewLink(link){try{const u=new URL(link);return u.origin+u.pathname+'?nftoken=••••••••';}catch{return'Verification link';}}
-  function showToast(message){toast.value=message;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.value='',2200);}
-  async function copyLink(code){
-    const successMessage=`Link copied. Double-check that ${code.profile} is your profile before using it.`;
-    try{await navigator.clipboard.writeText(code.link);showToast(successMessage);}
-    catch{try{const area=document.createElement('textarea');area.value=code.link;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();const success=document.execCommand('copy');area.remove();showToast(success?successMessage:'Copy failed. Try opening the link instead.');}catch{showToast('Copy failed. Try opening the link instead.');}}
-  }
   function isLatest(code){return codes.value.length>0&&code._rowIndex===codes.value[0]._rowIndex;}
   function openLink(code){
     if(!isSafeLink(code.link)){showToast('Invalid verification link');return;}
@@ -173,9 +167,16 @@ createApp({setup(){
     const code=pendingCode.value;
     if(!isSafeLink(code.link)){cancelOpen();showToast('Invalid verification link');return;}
     // Open synchronously from the confirmation click to avoid popup blockers.
-    const tab=window.open(code.link,'_blank','noopener,noreferrer');
+    const tab=window.open(code.link,'_blank');
     cancelOpen();
-    if(!tab)showToast('Pop-up blocked. Allow pop-ups and try again.');
+    if(!tab){showToast('Pop-up blocked. Allow pop-ups and try again.');return;}
+    try{tab.opener=null;}catch{}
+    // Hide immediately and consume in D1 so it cannot return after refresh.
+    consumedIds.add(code._rowIndex);
+    codes.value=codes.value.filter(item=>item._rowIndex!==code._rowIndex);
+    fetch(API_URL+'/'+encodeURIComponent(code._rowIndex),{method:'DELETE',cache:'no-store',credentials:'omit',headers:{'Accept':'application/json'}})
+      .then(response=>{if(!response.ok)throw new Error('Consume request failed');return response.json();})
+      .catch(()=>console.error('Unable to consume the opened access code.'));
   }
   function refreshWhenVisible(){
     if(document.visibilityState==='visible')loadCodes();
@@ -200,7 +201,7 @@ createApp({setup(){
     document.removeEventListener('visibilitychange',handleVisibilityChange);
     requestId++;
   });
-  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,previewLink,copyLink,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen};
+  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen};
 }}).mount('#app');
 if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(console.error));
 </script>
