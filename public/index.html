@@ -32,12 +32,6 @@
       <i class="fa-solid fa-rotate-right text-lg" :class="{'animate-spin':loading}"></i>
     </button>
   </header>
-  <div class="mb-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-3">
-    <div class="flex items-center gap-3"><i class="fa-solid fa-magnifying-glass text-slate-500"></i>
-      <input v-model="search" type="search" placeholder="Search profile name..." aria-label="Search profile name" class="w-full bg-transparent py-2 text-base outline-none placeholder:text-slate-500">
-      <button v-if="search" @click="search=''" aria-label="Clear search" class="text-slate-400"><i class="fa-solid fa-circle-xmark"></i></button>
-    </div>
-  </div>
   <div class="mb-4">
     <button @click="showInstructions=!showInstructions" class="flex items-center gap-2 rounded-lg py-1 text-sm font-semibold text-indigo-300">
       <i class="fa-regular fa-circle-question"></i>
@@ -46,7 +40,7 @@
     </button>
     <div v-if="showInstructions" class="mt-2 rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-sm text-slate-300">
       <ol class="list-decimal space-y-2 pl-5">
-        <li>Find your correct <strong>Profile Name</strong> or search for it.</li>
+        <li>Find your correct <strong>Profile Name</strong>.</li>
         <li>Don't see your profile? Resend the verification email. <strong>No email, no link here.</strong></li>
         <li>Tap <strong>Get code</strong> and confirm the selected profile. The four-digit code will appear here when retrieval succeeds.</li>
         <li>Before continuing, make sure the selected profile is yours or one you're authorized to access.</li>
@@ -55,17 +49,17 @@
   </div>
   <div class="mb-5 flex items-center justify-between text-xs text-slate-400">
     <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full" :class="error?'bg-red-400':'bg-emerald-400'"></span><span>{{error?'Connection issue':'Auto-sync every 3 seconds'}}</span></div>
-    <span>{{filteredCodes.length}} code{{filteredCodes.length===1?'':'s'}}</span>
+    <span>{{uniqueCodes.length}} code{{uniqueCodes.length===1?'':'s'}}</span>
   </div>
   <div v-if="error" class="mb-4 rounded-xl border border-red-900 bg-red-950/40 p-4 text-sm text-red-300"><i class="fa-solid fa-triangle-exclamation mr-2"></i>{{error}} <button @click="loadCodes" class="ml-2 underline">Retry</button></div>
   <div v-if="loading&&codes.length===0" class="space-y-3"><div v-for="n in 3" :key="n" class="h-40 animate-pulse rounded-2xl bg-slate-900"></div></div>
-  <div v-else-if="filteredCodes.length===0" class="rounded-3xl border border-dashed border-slate-800 px-5 py-14 text-center">
+  <div v-else-if="uniqueCodes.length===0" class="rounded-3xl border border-dashed border-slate-800 px-5 py-14 text-center">
     <i class="fa-solid fa-inbox mb-4 text-4xl text-slate-600"></i>
-    <h2 class="font-bold">{{search?'No matching profiles':'No access codes yet'}}</h2>
-    <p class="mt-2 text-sm text-slate-500">{{search?'Try another profile name.':'New links will appear automatically.'}}</p>
+    <h2 class="font-bold">No access codes yet</h2>
+    <p class="mt-2 text-sm text-slate-500">New links will appear automatically.</p>
   </div>
   <main v-else class="space-y-3">
-    <article v-for="code in filteredCodes" :key="code._rowIndex" class="card flex min-w-0 items-center gap-3 rounded-2xl border border-slate-800/90 px-3 py-3 shadow-lg">
+    <article v-for="code in uniqueCodes" :key="code._rowIndex" class="card flex min-w-0 items-center gap-3 rounded-2xl border border-slate-800/90 px-3 py-3 shadow-lg">
       <div class="min-w-0 flex-1">
         <div class="mb-0 flex flex-wrap items-center gap-2">
           <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Profile Name</span>
@@ -105,7 +99,7 @@ const {createApp,ref,computed,onMounted,onUnmounted}=Vue;
 createApp({setup(){
   // Replace this with the deployed Apps Script /exec URL.
   const API_URL='https://api.vaqzmobiz.com/api/access-codes';
-  const codes=ref([]),search=ref(''),loading=ref(false),error=ref(''),toast=ref(''),lastSynced=ref('');
+  const codes=ref([]),loading=ref(false),error=ref(''),toast=ref(''),lastSynced=ref('');
   const consumedIds=new Set();
   const showInstructions=ref(false),pendingCode=ref(null);
   let refreshTimer=null,toastTimer=null,idleTimer=null,requestId=0;
@@ -126,7 +120,7 @@ createApp({setup(){
       clearTimeout(idleTimer);
     }
   }
-  const filteredCodes=computed(()=>{const seen=new Set();const unique=codes.value.filter(c=>{const key=c.accessCode?c.profile.trim().toLowerCase()+'|'+c.accessCode:null;if(!key)return true;if(seen.has(key))return false;seen.add(key);return true;});const term=search.value.trim().toLowerCase();return term?unique.filter(c=>c.profile.toLowerCase().includes(term)):unique;});
+  const uniqueCodes=computed(()=>{const seen=new Set();return codes.value.filter(c=>{const key=c.accessCode?c.profile.trim().toLowerCase()+'|'+c.accessCode:null;if(!key)return true;if(seen.has(key))return false;seen.add(key);return true;});});
   function isSafeLink(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='www.netflix.com'&&u.pathname==='/account/travel/verify';}catch{return false;}}
   async function loadCodes(){
     if(loading.value)return;
@@ -224,7 +218,7 @@ createApp({setup(){
     document.removeEventListener('visibilitychange',handleVisibilityChange);
     requestId++;
   });
-  return{codes,search,loading,error,toast,lastSynced,filteredCodes,loadCodes,relativeTime,copyCode,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen,retrieving,clearToast};
+  return{codes,loading,error,toast,lastSynced,uniqueCodes,loadCodes,relativeTime,copyCode,openLink,isLatest,showInstructions,pendingCode,cancelOpen,confirmOpen,retrieving,clearToast};
 }}).mount('#app');
 if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(console.error));
 </script>
