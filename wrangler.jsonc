@@ -7,7 +7,7 @@
   },
   "routes": [
     {
-      "pattern": "accesscode.vaqzmobiz.com",
+      "pattern": "hh.vaqzmobiz.com",
       "custom_domain": true
     }
   ]
