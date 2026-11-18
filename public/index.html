@@ -97,7 +97,7 @@
 <script>
 const {createApp,ref,computed,onMounted,onUnmounted}=Vue;
 createApp({setup(){
-  // Replace this with the deployed Apps Script /exec URL.
+  // Production Cloudflare Temp Mail API. Do not replace with Apps Script or JSONP.
   const API_URL='https://api.vaqzmobiz.com/api/access-codes';
   const codes=ref([]),loading=ref(false),error=ref(''),toast=ref(''),lastSynced=ref('');
   const consumedIds=new Set();
