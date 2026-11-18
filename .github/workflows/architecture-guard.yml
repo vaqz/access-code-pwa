@@ -1,0 +1,37 @@
+name: Architecture Guard
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  protect-cloudflare-access-code-flow:
+    name: Protect Cloudflare-only access-code flow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Enforce production architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -d "apps-script" ]; then
+            echo "Legacy apps-script directory must not be restored."
+            exit 1
+          fi
+
+          if grep -Eiq 'Apps Script|SpreadsheetApp|JSONP|script\.google\.com|/exec' public/index.html; then
+            echo "Legacy Apps Script / JSONP reference found in production frontend."
+            exit 1
+          fi
+
+          grep -Fq "https://api.vaqzmobiz.com/api/access-codes" public/index.html
+          grep -Fq "+'/retrieve'" public/index.html
+          grep -Fq "setInterval(refreshWhenVisible,3000)" public/index.html
+
+          echo "Architecture guard passed: Cloudflare API, backend retrieval, and 3-second visible-page sync are intact."
