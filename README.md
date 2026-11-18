@@ -13,16 +13,15 @@ This is a standalone repository so the existing `vaqz/database-pwa` repository a
 - Build command: `None` / empty
 - Deploy command: `npx wrangler deploy`
 - Static assets directory: `./public` (configured in `wrangler.jsonc`)
-- Custom domain: `accesscode.vaqzmobiz.com` (configured in `wrangler.jsonc`)
+- Custom domain: `hh.vaqzmobiz.com` (configured in `wrangler.jsonc`)
 
-If the domain cannot be attached during deployment, open the new `accesscode-pwa` Worker → Settings → Domains & Routes → Add → Custom Domain and enter `accesscode.vaqzmobiz.com`. Do not add the hostname to the existing `database-pwa` Worker.
+If the domain cannot be attached during deployment, open the new `accesscode-pwa` Worker → Settings → Domains & Routes → Add → Custom Domain and enter `hh.vaqzmobiz.com`. Do not add the hostname to the existing `database-pwa` Worker.
 
 ## App behavior
 
 - Reads profile names, verification URLs and timestamps from the Apps Script JSONP endpoint.
-- Searches profile names.
 - Copies or opens verified Netflix travel verification links.
-- Refreshes every 30 seconds.
+- Auto-syncs every 3 seconds.
 - Service worker caches the app shell only; API responses and verification links are not cached.
 - Apps Script source is in `apps-script/Code.gs`; it reads only columns B:C and F, never column A.
 
